@@ -58,5 +58,18 @@ namespace Bhotiana.Properties {
                 this["ClientID"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("https://discord.com/api/webhooks/1223255129902415983/3CiU5O4JgqQ3vV0PJ8UUMOgDiu-Q" +
+            "Wd17g1Wk7AzP_-HCLU49xs1-bg3iDF1xWmCD3ns1")]
+        public string WebHookURL {
+            get {
+                return ((string)(this["WebHookURL"]));
+            }
+            set {
+                this["WebHookURL"] = value;
+            }
+        }
     }
 }

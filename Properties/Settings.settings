@@ -11,5 +11,8 @@
     <Setting Name="ClientID" Type="System.String" Scope="User">
       <Value Profile="(Default)">l8h8cvom7ne5gqoraf5kbggre15oc6</Value>
     </Setting>
+    <Setting Name="WebHookURL" Type="System.String" Scope="User">
+      <Value Profile="(Default)">https://discord.com/api/webhooks/1223255129902415983/3CiU5O4JgqQ3vV0PJ8UUMOgDiu-QWd17g1Wk7AzP_-HCLU49xs1-bg3iDF1xWmCD3ns1</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
