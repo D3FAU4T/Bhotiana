@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(App));
             this.StartBotBtn = new System.Windows.Forms.Button();
             this.ChannelNameTextBox = new System.Windows.Forms.TextBox();
             this.ChannelLabel = new System.Windows.Forms.Label();
@@ -150,6 +151,7 @@
             this.Controls.Add(this.ChannelLabel);
             this.Controls.Add(this.ChannelNameTextBox);
             this.Controls.Add(this.StartBotBtn);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "App";
             this.Text = "Bhotianaa";
             this.ResumeLayout(false);
