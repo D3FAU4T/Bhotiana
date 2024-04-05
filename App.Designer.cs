@@ -40,6 +40,9 @@
             this.GameNameLabel = new System.Windows.Forms.Label();
             this.GameNameTextBox = new System.Windows.Forms.TextBox();
             this.GoLiveBtn = new System.Windows.Forms.Button();
+            this.SettingLabel = new System.Windows.Forms.Label();
+            this.ActivateCommandsCheckbox = new System.Windows.Forms.CheckBox();
+            this.GreetCheckbox = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // StartBotBtn
@@ -70,9 +73,9 @@
             // 
             // ConsoleView
             // 
-            this.ConsoleView.Location = new System.Drawing.Point(26, 133);
+            this.ConsoleView.Location = new System.Drawing.Point(26, 210);
             this.ConsoleView.Name = "ConsoleView";
-            this.ConsoleView.Size = new System.Drawing.Size(308, 238);
+            this.ConsoleView.Size = new System.Drawing.Size(308, 161);
             this.ConsoleView.TabIndex = 3;
             this.ConsoleView.Text = "";
             // 
@@ -135,11 +138,50 @@
             this.GoLiveBtn.UseVisualStyleBackColor = true;
             this.GoLiveBtn.Click += new System.EventHandler(this.GoLiveBtn_Click);
             // 
+            // SettingLabel
+            // 
+            this.SettingLabel.AutoSize = true;
+            this.SettingLabel.Location = new System.Drawing.Point(46, 126);
+            this.SettingLabel.Name = "SettingLabel";
+            this.SettingLabel.Size = new System.Drawing.Size(268, 13);
+            this.SettingLabel.TabIndex = 11;
+            this.SettingLabel.Text = "--------------------------------------Setting------------------------------------" +
+    "--";
+            // 
+            // ActivateCommandsCheckbox
+            // 
+            this.ActivateCommandsCheckbox.AutoSize = true;
+            this.ActivateCommandsCheckbox.Checked = true;
+            this.ActivateCommandsCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.ActivateCommandsCheckbox.Location = new System.Drawing.Point(122, 151);
+            this.ActivateCommandsCheckbox.Name = "ActivateCommandsCheckbox";
+            this.ActivateCommandsCheckbox.Size = new System.Drawing.Size(120, 17);
+            this.ActivateCommandsCheckbox.TabIndex = 12;
+            this.ActivateCommandsCheckbox.Text = "Activate Commands";
+            this.ActivateCommandsCheckbox.UseVisualStyleBackColor = true;
+            this.ActivateCommandsCheckbox.CheckedChanged += new System.EventHandler(this.ActivateCommandsCheckbox_CheckedChanged);
+            // 
+            // GreetCheckbox
+            // 
+            this.GreetCheckbox.AutoSize = true;
+            this.GreetCheckbox.Checked = true;
+            this.GreetCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.GreetCheckbox.Location = new System.Drawing.Point(122, 174);
+            this.GreetCheckbox.Name = "GreetCheckbox";
+            this.GreetCheckbox.Size = new System.Drawing.Size(92, 17);
+            this.GreetCheckbox.TabIndex = 13;
+            this.GreetCheckbox.Text = "Greet Viewers";
+            this.GreetCheckbox.UseVisualStyleBackColor = true;
+            this.GreetCheckbox.CheckedChanged += new System.EventHandler(this.GreetCheckbox_CheckedChanged);
+            // 
             // App
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(362, 450);
+            this.Controls.Add(this.GreetCheckbox);
+            this.Controls.Add(this.ActivateCommandsCheckbox);
+            this.Controls.Add(this.SettingLabel);
             this.Controls.Add(this.GoLiveBtn);
             this.Controls.Add(this.GameNameTextBox);
             this.Controls.Add(this.GameNameLabel);
@@ -172,6 +214,9 @@
         private System.Windows.Forms.Label GameNameLabel;
         private System.Windows.Forms.TextBox GameNameTextBox;
         private System.Windows.Forms.Button GoLiveBtn;
+        private System.Windows.Forms.Label SettingLabel;
+        private System.Windows.Forms.CheckBox ActivateCommandsCheckbox;
+        private System.Windows.Forms.CheckBox GreetCheckbox;
     }
 }
 

@@ -17,6 +17,8 @@ namespace Bhotiana
     public partial class App : Form
     {
         public TwitchClient client;
+        public bool ShouldActivateCommands = true;
+        public bool ShouldGreetNewViewers = true;
 
         private static ConnectionCredentials credentials;
         private static readonly HttpClient httpClient = new HttpClient();
@@ -26,7 +28,7 @@ namespace Bhotiana
         public App()
         {
             InitializeComponent();
-            Viewers = new string[] {};
+            Viewers = new string[] { "836876180" };
             ConsoleView.Text = "";
             credentials = new ConnectionCredentials(Properties.Settings.Default.Username, Properties.Settings.Default.Password);
             var clientOptions = new ClientOptions
@@ -91,11 +93,14 @@ namespace Bhotiana
 
         private void OnMessageReceived(object sender, OnMessageReceivedArgs e)
         {
-            if (!Viewers.Contains(e.ChatMessage.UserId))
+            if (ShouldGreetNewViewers && !Viewers.Contains(e.ChatMessage.UserId))
             {
                 Viewers = Viewers.Append(e.ChatMessage.UserId).ToArray();
                 Say($"gianaaHi Welcome to my mamma's stream, {e.ChatMessage.Username}");
+                ConsoleView.Text += $"{e.ChatMessage.Username} joined the stream\n";
             }
+
+            if (!ShouldActivateCommands) return;
 
             if (e.ChatMessage.Message.EndsWith("-")) Say(e.ChatMessage.Message.TrimEnd('-'));
             if (!e.ChatMessage.Message.StartsWith("!")) return;
@@ -215,6 +220,16 @@ namespace Bhotiana
                     }}
                 ]
             }}";
+        }
+
+        private void ActivateCommandsCheckbox_CheckedChanged(object sender, EventArgs e)
+        {
+            ShouldActivateCommands = ActivateCommandsCheckbox.Checked;
+        }
+
+        private void GreetCheckbox_CheckedChanged(object sender, EventArgs e)
+        {
+            ShouldGreetNewViewers = GreetCheckbox.Checked;
         }
     }
 }
