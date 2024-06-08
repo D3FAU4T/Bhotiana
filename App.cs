@@ -128,11 +128,26 @@ namespace Bhotiana
 
         public async Task<string> DefineWord(string word)
         {
-            HttpResponseMessage res = await httpClient.GetAsync($"https://api.dictionaryapi.dev/api/v2/entries/en/{word.ToLower()}");
-            if (!res.IsSuccessStatusCode) return "no def found";
-            string responseBody = await res.Content.ReadAsStringAsync();
-            var result = JsonConvert.DeserializeObject<JArray>(responseBody);
-            return result[0]["meanings"][0]["definitions"][0]["definition"].ToString();
+            word = word.ToLower();
+            HttpResponseMessage FreeDictionaryAPI = await httpClient.GetAsync($"https://api.dictionaryapi.dev/api/v2/entries/en/{word}");
+            if (!FreeDictionaryAPI.IsSuccessStatusCode)
+            {
+                HttpResponseMessage UrbanDictionaryAPI = await httpClient.GetAsync($"https://api.urbandictionary.com/v0/define?term={word}");
+                if (!UrbanDictionaryAPI.IsSuccessStatusCode) return "no def found";
+                string UDResBody = await UrbanDictionaryAPI.Content.ReadAsStringAsync();
+                JObject UDResult = JsonConvert.DeserializeObject<JObject>(UDResBody);
+                JArray UDList = UDResult["list"] as JArray;
+                if (UDList.Count == 0) return "no def found";
+                string UDFinalRes = $"[Urban Dictionary] {UDList[0]["word"]}: " + UDList[0]["definition"].ToString();
+                if (UDFinalRes.Length > 500) return $"[Urban Dictionary] Definition exceeds twitch message character limit. Open the link instead: https://www.urbandictionary.com/define.php?term={word}";
+                return UDFinalRes;
+            }
+
+            string FDResBody = await FreeDictionaryAPI.Content.ReadAsStringAsync();
+            var FDResult = JsonConvert.DeserializeObject<JArray>(FDResBody);
+            string FDFinalRes = $"[Free Dictionary] {FDResult[0]["word"]}: " + FDResult[0]["meanings"][0]["definitions"][0]["definition"].ToString();
+            if (FDFinalRes.Length > 500) return $"[Free Dictionary] Definition exceeds twitch message character limit. Open the link instead: https://api.dictionaryapi.dev/api/v2/entries/en/{word}";
+            return FDFinalRes;
         }
 
         public async Task<string> GetUptime(string ChannelName)
@@ -169,7 +184,7 @@ namespace Bhotiana
 
             if (CommandName == $"{BotSetting.Prefix}define")
             {
-                string res = await DefineWord(args[1]);
+                string res = await DefineWord(args[0]);
                 if (res == "no def found") Say("Mamma, help. I don't know the meaning of this word D:");
                 else Say(res, RawEvent.ChatMessage.Id);
             }
