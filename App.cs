@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Speech.Synthesis;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.Client;
@@ -25,7 +26,8 @@ namespace Bhotiana
         public bool ShouldActivateCommands = true;
         public bool ShouldGreetNewViewers = true;
         public YAMLSettings BotSetting;
-        
+        public SpeechSynthesizer TextToSpeech;
+
         private static string SettingsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         private static ConnectionCredentials credentials;
         private static readonly IDeserializer YAMLDeserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).Build();
@@ -36,6 +38,15 @@ namespace Bhotiana
             InitializeComponent();
             BotSetting = InitialiseSettings();
             ConsoleView.Text = "";
+
+            TextToSpeech = new SpeechSynthesizer();
+            TextToSpeech.SetOutputToDefaultAudioDevice();
+
+            if (TextToSpeech.GetInstalledVoices().Any(voice => voice.VoiceInfo.Name == "Microsoft Zira Desktop"))
+                TextToSpeech.SelectVoice("Microsoft Zira Desktop");
+
+            TextToSpeech.Speak("I'm now online mamma");
+
             credentials = new ConnectionCredentials(Properties.Settings.Default.Username, Properties.Settings.Default.Password);
             var clientOptions = new ClientOptions
             {
@@ -47,28 +58,45 @@ namespace Bhotiana
             client = new TwitchClient(customClient);
         }
 
-        private void StartBotBtn_Click(object sender, EventArgs e)
+        private async void StartBotBtn_Click(object sender, EventArgs e)
         {
-            if (ChannelNameTextBox.Text == "") { 
+            string ChannelName = ChannelNameTextBox.Text.ToLower();
+            if (ChannelName == "")
+            {
                 MessageBox.Show("Please enter a channel name", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            if (StartBotBtn.Text == "Stop Bot")
+            if (StartBotBtn.Text == "Disconnect")
             {
                 client.Disconnect();
-                StartBotBtn.Text = "Start Bot";
-                ConsoleView.Text += "Bot stopped\n";
-                return;
+                StartBotBtn.Text = "Connect";
+                UpdateConsoleView($"Disconnected from {ChannelName}\n");
+                TextToSpeech.Speak("Disconnected");
             }
 
             else
             {
-                client.Initialize(credentials, ChannelNameTextBox.Text);
+                if (ChannelName != "gianaa_")
+                {
+                    HttpResponseMessage TwitchInsights = await httpClient.GetAsync($"https://api.twitchinsights.net/v1/user/status/{ChannelName}");
+                    string TwitchInsightsResponse = await TwitchInsights.Content.ReadAsStringAsync();
+                    if (TwitchInsightsResponse.Contains("{\"status\":400"))
+                    {
+                        MessageBox.Show("Channel not found. Please enter a valid channel!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                }                
+
+                client.Initialize(credentials, ChannelName);
                 client.OnMessageReceived += OnMessageReceived;
                 client.Connect();
-                StartBotBtn.Text = "Stop Bot";
-                ConsoleView.Text += "Bot started\n";
+                StartBotBtn.Text = "Disconnect";
+                UpdateConsoleView($"Connected to {ChannelName}\n");
+                if (ChannelName != "gianaa_")
+                    TextToSpeech.Speak($"Connected to {ChannelName}");
+                else
+                    TextToSpeech.Speak("Connected to your twitch channel mamma");
             }
         }
 
@@ -76,11 +104,18 @@ namespace Bhotiana
         {
             if (e.KeyCode == Keys.Enter)
             {
-                if (ChatBox.Text == "") return;
-                client.SendMessage(client.JoinedChannels[0], ChatBox.Text);
-                ChatBox.Text = "";
-                e.Handled = true;
-                e.SuppressKeyPress = true;
+                try
+                {
+                    if (ChatBox.Text == "") return;
+                    client.SendMessage(client.JoinedChannels[0], ChatBox.Text);
+                    ChatBox.Text = "";
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    MessageBox.Show("Connect to a twitch channel first!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -103,17 +138,17 @@ namespace Bhotiana
             {
                 BotSetting.ViewersToIgnore = BotSetting.ViewersToIgnore.Append(e.ChatMessage.UserId).ToArray();
                 if (e.ChatMessage.UserId.Equals("518259240"))
-                    Say("Hello mamma gianaaHi , how are you doing? Did you sent the discord notification yet?");
+                    SendMessage("Hello mamma gianaaHi , how are you doing? Did you sent the discord notification yet?");
                 else if (e.ChatMessage.UserId.Equals("709767328"))
-                    Say("gianaaHi d3fau4t, লাইভ স্ট্রীমে স্বাগতম VoHiYo");
+                    SendMessage("gianaaHi d3fau4t, লাইভ স্ট্রীমে স্বাগতম VoHiYo");
                 else
-                    Say($"gianaaHi Welcome to my mamma's stream, {e.ChatMessage.Username}");
-                //ConsoleView.Text += $"{e.ChatMessage.Username} joined the stream\n";
+                    SendMessage($"gianaaHi Welcome to my mamma's stream, {e.ChatMessage.Username}");
+                UpdateConsoleView($"{e.ChatMessage.Username} joined the stream\n");
             }
 
             if (!ShouldActivateCommands) return;
 
-            if (e.ChatMessage.Message.EndsWith("-")) Say(e.ChatMessage.Message.TrimEnd('-'));
+            if (e.ChatMessage.Message.EndsWith("-")) SendMessage(e.ChatMessage.Message.TrimEnd('-'));
             if (!e.ChatMessage.Message.StartsWith(BotSetting.Prefix)) return;
             string[] args = e.ChatMessage.Message.Split(' ');
             HandleCommands(args[0].ToLower(), args.Skip(1).ToArray(), e);
@@ -157,7 +192,7 @@ namespace Bhotiana
             return await res.Content.ReadAsStringAsync();
         }
 
-        private void Say(string message, string ReplyID = null)
+        private void SendMessage(string message, string ReplyID = null)
         {
             if (ReplyID != null) client.SendReply(client.JoinedChannels[0], ReplyID, message);
             else client.SendMessage(client.JoinedChannels[0], message);
@@ -176,8 +211,8 @@ namespace Bhotiana
 
                         bool IsReply = ConditionMet ? cmd.IsConditionalReply : cmd.IsReply;
 
-                        if (IsReply) Say(response, RawEvent.ChatMessage.Id);
-                        else Say(response);
+                        if (IsReply) SendMessage(response, RawEvent.ChatMessage.Id);
+                        else SendMessage(response);
                     }
                 }
             }
@@ -185,8 +220,43 @@ namespace Bhotiana
             if (CommandName == $"{BotSetting.Prefix}define")
             {
                 string res = await DefineWord(args[0]);
-                if (res == "no def found") Say("Mamma, help. I don't know the meaning of this word D:");
-                else Say(res, RawEvent.ChatMessage.Id);
+                if (res == "no def found") SendMessage("Mamma, help. I don't know the meaning of this word D:");
+                else SendMessage(res, RawEvent.ChatMessage.Id);
+            }
+
+            else if (CommandName == $"{BotSetting.Prefix}tts")
+            {
+                string message = string.Join(" ", args);
+                TextToSpeech.SpeakAsync(message);
+            }
+
+            else if (CommandName == $"{BotSetting.Prefix}voices")
+            {
+                string voices = "";
+                UpdateConsoleView("\nAvailable voices are:\n");
+                foreach (InstalledVoice voice in TextToSpeech.GetInstalledVoices())
+                {
+                    UpdateConsoleView(voice.VoiceInfo.Name + "\n");
+                    voices += voice.VoiceInfo.Name + ", ";
+                }
+
+                SendMessage($"Available voices are: {voices.TrimEnd(' ', ',')}");
+            }
+
+            else if (CommandName == $"{BotSetting.Prefix}voice")
+            {
+                try
+                {
+                    TextToSpeech.SelectVoice(string.Join(" ", args));
+                    TextToSpeech.SpeakAsync($"Voice changed to {TextToSpeech.Voice.Name} successfully");
+                    SendMessage($"Voice changed to {TextToSpeech.Voice.Name} successfully");
+                }
+                catch (ArgumentException ex)
+                {
+                    UpdateConsoleView(ex.Message + "\n");
+                    TextToSpeech.SpeakAsync(ex.Message);
+                    SendMessage(ex.Message, RawEvent.ChatMessage.Id);
+                }
             }
         }
 
@@ -245,6 +315,24 @@ namespace Bhotiana
             return YAMLDeserializer.Deserialize<YAMLSettings>(config);
         }
 
+        private void ActivateCommandsCheckbox_CheckedChanged(object sender, EventArgs e)
+        {
+            ShouldActivateCommands = ActivateCommandsCheckbox.Checked;
+        }
+
+        private void GreetCheckbox_CheckedChanged(object sender, EventArgs e)
+        {
+            ShouldGreetNewViewers = GreetCheckbox.Checked;
+        }
+
+        private void UpdateConsoleView(string text)
+        {
+            if (ConsoleView.InvokeRequired)
+                ConsoleView.Invoke(new Action<string>(UpdateConsoleView), text);
+            else
+                ConsoleView.Text += text;
+        }
+
         private static string WebHookMsg(string Description, string GameName)
         {
             return $@"{{
@@ -276,16 +364,6 @@ namespace Bhotiana
                     }}
                 ]
             }}";
-        }
-
-        private void ActivateCommandsCheckbox_CheckedChanged(object sender, EventArgs e)
-        {
-            ShouldActivateCommands = ActivateCommandsCheckbox.Checked;
-        }
-
-        private void GreetCheckbox_CheckedChanged(object sender, EventArgs e)
-        {
-            ShouldGreetNewViewers = GreetCheckbox.Checked;
         }
     }
 }

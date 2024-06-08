@@ -47,92 +47,104 @@
             // 
             // StartBotBtn
             // 
-            this.StartBotBtn.Location = new System.Drawing.Point(259, 17);
+            this.StartBotBtn.Location = new System.Drawing.Point(345, 21);
+            this.StartBotBtn.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.StartBotBtn.Name = "StartBotBtn";
-            this.StartBotBtn.Size = new System.Drawing.Size(75, 23);
+            this.StartBotBtn.Size = new System.Drawing.Size(100, 28);
             this.StartBotBtn.TabIndex = 0;
-            this.StartBotBtn.Text = "Start Bot";
+            this.StartBotBtn.Text = "Connect";
             this.StartBotBtn.UseVisualStyleBackColor = true;
             this.StartBotBtn.Click += new System.EventHandler(this.StartBotBtn_Click);
             // 
             // ChannelNameTextBox
             // 
-            this.ChannelNameTextBox.Location = new System.Drawing.Point(105, 19);
+            this.ChannelNameTextBox.Location = new System.Drawing.Point(140, 23);
+            this.ChannelNameTextBox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.ChannelNameTextBox.Name = "ChannelNameTextBox";
-            this.ChannelNameTextBox.Size = new System.Drawing.Size(148, 20);
+            this.ChannelNameTextBox.Size = new System.Drawing.Size(196, 22);
             this.ChannelNameTextBox.TabIndex = 1;
             // 
             // ChannelLabel
             // 
             this.ChannelLabel.AutoSize = true;
-            this.ChannelLabel.Location = new System.Drawing.Point(23, 21);
+            this.ChannelLabel.Location = new System.Drawing.Point(31, 26);
+            this.ChannelLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.ChannelLabel.Name = "ChannelLabel";
-            this.ChannelLabel.Size = new System.Drawing.Size(78, 13);
+            this.ChannelLabel.Size = new System.Drawing.Size(96, 16);
             this.ChannelLabel.TabIndex = 2;
             this.ChannelLabel.Text = "Channel name:";
             // 
             // ConsoleView
             // 
-            this.ConsoleView.Location = new System.Drawing.Point(26, 210);
+            this.ConsoleView.Location = new System.Drawing.Point(35, 258);
+            this.ConsoleView.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.ConsoleView.Name = "ConsoleView";
-            this.ConsoleView.Size = new System.Drawing.Size(308, 161);
+            this.ConsoleView.ReadOnly = true;
+            this.ConsoleView.Size = new System.Drawing.Size(409, 197);
             this.ConsoleView.TabIndex = 3;
             this.ConsoleView.Text = "";
             // 
             // ChatBox
             // 
-            this.ChatBox.Location = new System.Drawing.Point(87, 386);
+            this.ChatBox.Location = new System.Drawing.Point(116, 475);
+            this.ChatBox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.ChatBox.Name = "ChatBox";
-            this.ChatBox.Size = new System.Drawing.Size(247, 20);
+            this.ChatBox.Size = new System.Drawing.Size(328, 22);
             this.ChatBox.TabIndex = 4;
             this.ChatBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.ChatBox_KeyDown);
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(23, 389);
+            this.label1.Location = new System.Drawing.Point(31, 479);
+            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(58, 13);
+            this.label1.Size = new System.Drawing.Size(70, 16);
             this.label1.TabIndex = 5;
             this.label1.Text = "Chat Here:";
             // 
             // StreamTitleTextBox
             // 
-            this.StreamTitleTextBox.Location = new System.Drawing.Point(105, 57);
+            this.StreamTitleTextBox.Location = new System.Drawing.Point(140, 70);
+            this.StreamTitleTextBox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.StreamTitleTextBox.Name = "StreamTitleTextBox";
-            this.StreamTitleTextBox.Size = new System.Drawing.Size(229, 20);
+            this.StreamTitleTextBox.Size = new System.Drawing.Size(304, 22);
             this.StreamTitleTextBox.TabIndex = 6;
             // 
             // StreamTitle
             // 
             this.StreamTitle.AutoSize = true;
-            this.StreamTitle.Location = new System.Drawing.Point(23, 60);
+            this.StreamTitle.Location = new System.Drawing.Point(31, 74);
+            this.StreamTitle.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.StreamTitle.Name = "StreamTitle";
-            this.StreamTitle.Size = new System.Drawing.Size(66, 13);
+            this.StreamTitle.Size = new System.Drawing.Size(82, 16);
             this.StreamTitle.TabIndex = 7;
             this.StreamTitle.Text = "Stream Title:";
             // 
             // GameNameLabel
             // 
             this.GameNameLabel.AutoSize = true;
-            this.GameNameLabel.Location = new System.Drawing.Point(23, 94);
+            this.GameNameLabel.Location = new System.Drawing.Point(31, 116);
+            this.GameNameLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.GameNameLabel.Name = "GameNameLabel";
-            this.GameNameLabel.Size = new System.Drawing.Size(69, 13);
+            this.GameNameLabel.Size = new System.Drawing.Size(87, 16);
             this.GameNameLabel.TabIndex = 8;
             this.GameNameLabel.Text = "Game Name:";
             // 
             // GameNameTextBox
             // 
-            this.GameNameTextBox.Location = new System.Drawing.Point(105, 91);
+            this.GameNameTextBox.Location = new System.Drawing.Point(140, 112);
+            this.GameNameTextBox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.GameNameTextBox.Name = "GameNameTextBox";
-            this.GameNameTextBox.Size = new System.Drawing.Size(148, 20);
+            this.GameNameTextBox.Size = new System.Drawing.Size(196, 22);
             this.GameNameTextBox.TabIndex = 9;
             // 
             // GoLiveBtn
             // 
-            this.GoLiveBtn.Location = new System.Drawing.Point(259, 91);
+            this.GoLiveBtn.Location = new System.Drawing.Point(345, 112);
+            this.GoLiveBtn.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.GoLiveBtn.Name = "GoLiveBtn";
-            this.GoLiveBtn.Size = new System.Drawing.Size(75, 23);
+            this.GoLiveBtn.Size = new System.Drawing.Size(100, 28);
             this.GoLiveBtn.TabIndex = 10;
             this.GoLiveBtn.Text = "Go Live";
             this.GoLiveBtn.UseVisualStyleBackColor = true;
@@ -141,9 +153,10 @@
             // SettingLabel
             // 
             this.SettingLabel.AutoSize = true;
-            this.SettingLabel.Location = new System.Drawing.Point(46, 126);
+            this.SettingLabel.Location = new System.Drawing.Point(61, 155);
+            this.SettingLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.SettingLabel.Name = "SettingLabel";
-            this.SettingLabel.Size = new System.Drawing.Size(268, 13);
+            this.SettingLabel.Size = new System.Drawing.Size(352, 16);
             this.SettingLabel.TabIndex = 11;
             this.SettingLabel.Text = "--------------------------------------Setting------------------------------------" +
     "--";
@@ -153,9 +166,10 @@
             this.ActivateCommandsCheckbox.AutoSize = true;
             this.ActivateCommandsCheckbox.Checked = true;
             this.ActivateCommandsCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.ActivateCommandsCheckbox.Location = new System.Drawing.Point(122, 151);
+            this.ActivateCommandsCheckbox.Location = new System.Drawing.Point(163, 186);
+            this.ActivateCommandsCheckbox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.ActivateCommandsCheckbox.Name = "ActivateCommandsCheckbox";
-            this.ActivateCommandsCheckbox.Size = new System.Drawing.Size(120, 17);
+            this.ActivateCommandsCheckbox.Size = new System.Drawing.Size(149, 20);
             this.ActivateCommandsCheckbox.TabIndex = 12;
             this.ActivateCommandsCheckbox.Text = "Activate Commands";
             this.ActivateCommandsCheckbox.UseVisualStyleBackColor = true;
@@ -166,9 +180,10 @@
             this.GreetCheckbox.AutoSize = true;
             this.GreetCheckbox.Checked = true;
             this.GreetCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.GreetCheckbox.Location = new System.Drawing.Point(122, 174);
+            this.GreetCheckbox.Location = new System.Drawing.Point(163, 214);
+            this.GreetCheckbox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.GreetCheckbox.Name = "GreetCheckbox";
-            this.GreetCheckbox.Size = new System.Drawing.Size(92, 17);
+            this.GreetCheckbox.Size = new System.Drawing.Size(113, 20);
             this.GreetCheckbox.TabIndex = 13;
             this.GreetCheckbox.Text = "Greet Viewers";
             this.GreetCheckbox.UseVisualStyleBackColor = true;
@@ -176,9 +191,9 @@
             // 
             // App
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(362, 450);
+            this.ClientSize = new System.Drawing.Size(483, 554);
             this.Controls.Add(this.GreetCheckbox);
             this.Controls.Add(this.ActivateCommandsCheckbox);
             this.Controls.Add(this.SettingLabel);
@@ -194,6 +209,7 @@
             this.Controls.Add(this.ChannelNameTextBox);
             this.Controls.Add(this.StartBotBtn);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "App";
             this.Text = "Bhotianaa";
             this.ResumeLayout(false);
