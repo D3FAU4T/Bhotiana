@@ -1,5 +1,8 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -10,7 +13,9 @@ using TwitchLib.Communication.Models;
 using TwitchLib.Communication.Clients;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Linq;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
+using NCalc;
 
 namespace Bhotiana
 {
@@ -19,16 +24,17 @@ namespace Bhotiana
         public TwitchClient client;
         public bool ShouldActivateCommands = true;
         public bool ShouldGreetNewViewers = true;
-
+        public YAMLSettings BotSetting;
+        
+        private static string SettingsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         private static ConnectionCredentials credentials;
+        private static readonly IDeserializer YAMLDeserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).Build();
         private static readonly HttpClient httpClient = new HttpClient();
-
-        private string[] Viewers;
 
         public App()
         {
             InitializeComponent();
-            Viewers = new string[] { "836876180" };
+            BotSetting = InitialiseSettings();
             ConsoleView.Text = "";
             credentials = new ConnectionCredentials(Properties.Settings.Default.Username, Properties.Settings.Default.Password);
             var clientOptions = new ClientOptions
@@ -93,19 +99,24 @@ namespace Bhotiana
 
         private void OnMessageReceived(object sender, OnMessageReceivedArgs e)
         {
-            if (ShouldGreetNewViewers && !Viewers.Contains(e.ChatMessage.UserId))
+            if (ShouldGreetNewViewers && !BotSetting.ViewersToIgnore.Contains(e.ChatMessage.UserId))
             {
-                Viewers = Viewers.Append(e.ChatMessage.UserId).ToArray();
-                Say($"gianaaHi Welcome to my mamma's stream, {e.ChatMessage.Username}");
-                ConsoleView.Text += $"{e.ChatMessage.Username} joined the stream\n";
+                BotSetting.ViewersToIgnore = BotSetting.ViewersToIgnore.Append(e.ChatMessage.UserId).ToArray();
+                if (e.ChatMessage.UserId.Equals("518259240"))
+                    Say("Hello mamma gianaaHi , how are you doing? Did you sent the discord notification yet?");
+                else if (e.ChatMessage.UserId.Equals("709767328"))
+                    Say("gianaaHi d3fau4t, লাইভ স্ট্রীমে স্বাগতম VoHiYo");
+                else
+                    Say($"gianaaHi Welcome to my mamma's stream, {e.ChatMessage.Username}");
+                //ConsoleView.Text += $"{e.ChatMessage.Username} joined the stream\n";
             }
 
             if (!ShouldActivateCommands) return;
 
             if (e.ChatMessage.Message.EndsWith("-")) Say(e.ChatMessage.Message.TrimEnd('-'));
-            if (!e.ChatMessage.Message.StartsWith("!")) return;
+            if (!e.ChatMessage.Message.StartsWith(BotSetting.Prefix)) return;
             string[] args = e.ChatMessage.Message.Split(' ');
-            HandleCommands(args[0].ToLower(), args, e);
+            HandleCommands(args[0].ToLower(), args.Skip(1).ToArray(), e);
         }
 
         private async Task<string> PostRequest(string Link, string Content)
@@ -139,54 +150,84 @@ namespace Bhotiana
 
         private async void HandleCommands(string CommandName, string[] args, OnMessageReceivedArgs RawEvent)
         {
-            if (CommandName == "!bomb")
+            foreach (Command cmd in BotSetting.Commands)
             {
-                if (args.Length == 1) Say("gianaaBomb", RawEvent.ChatMessage.Id);
-                else Say(args[1] + " gianaaBomb");
+                if (CommandName.Replace(BotSetting.Prefix, "") == cmd.Name.ToLower())
+                {
+                    if (cmd.Condition != null)
+                    {
+                        bool ConditionMet = EvaluateCondition(cmd.Condition, args);
+                        string response = await ResponseEvaluator(ConditionMet ? cmd.ResponseConditional : cmd.Response, RawEvent, args);
+
+                        bool IsReply = ConditionMet ? cmd.IsConditionalReply : cmd.IsReply;
+
+                        if (IsReply) Say(response, RawEvent.ChatMessage.Id);
+                        else Say(response);
+                    }
+                }
             }
 
-            else if (CommandName == "!discord")
-                Say("This is a thing now, I guess. Nobody be weird! MYAA https://discord.gg/PAZTR8tdq5", RawEvent.ChatMessage.Id);
-
-            else if (CommandName == "!raid")
-                Say("gianaa_ kicked us out BibleThump BibleThump");
-
-            else if (CommandName == "!lurk")
-                Say($"/me {RawEvent.ChatMessage.Username} is now lurking! That's not weird or anything.. monkaHmm");
-
-            else if (CommandName == "!cursed")
-                Say("CursedYep Cursed internet, cursed soundboard, we love that though CursedYep");
-
-            else if (CommandName == "!epic")
-                Say("NOTED Add a terrible player on Epic Games -> giiana_");
-
-            else if (CommandName == "!hug")
-            {
-                if (args.Length == 1) Say($"/me Thanks for being here! pepeL", RawEvent.ChatMessage.Id);
-                else Say($"/me {RawEvent.ChatMessage.Username} gives a warm hug to {args[1]}! <3");
-            }
-
-            else if (CommandName == "!bonk")
-            {
-                if (args.Length == 1) Say($"/me BOP Take that Punch!", RawEvent.ChatMessage.Id);
-                else Say($"/me BOP Take that, {args[1]}! Punch");
-            }
-
-            else if (CommandName == "!uptime")
-            {
-                if (args.Length == 1)
-                    Say($"My mamma has been streaming for {await GetUptime(client.JoinedChannels[0].Channel)}", RawEvent.ChatMessage.Id);
-                else
-                    Say($"My mamma has been streaming for {await GetUptime(args[1])}", RawEvent.ChatMessage.Id);
-
-            }
-
-            else if (CommandName == "!define")
+            if (CommandName == $"{BotSetting.Prefix}define")
             {
                 string res = await DefineWord(args[1]);
                 if (res == "no def found") Say("Mamma, help. I don't know the meaning of this word D:");
                 else Say(res, RawEvent.ChatMessage.Id);
             }
+        }
+
+        private bool EvaluateCondition(string Condition, string[] args)
+        {
+            if (string.IsNullOrEmpty(Condition)) return true;
+            var Expression = new Expression(Condition);
+            Expression.Parameters["Args"] = args;
+            Expression.EvaluateFunction += delegate (string name, FunctionArgs functionArgs)
+            {
+                if (name == "Length")
+                {
+                    var array = functionArgs.Parameters[0].Evaluate() as string[];
+                    functionArgs.Result = array.Length;
+                }
+            };
+
+            return (bool)Expression.Evaluate();
+        }
+
+        private async Task<string> ResponseEvaluator(string Response, OnMessageReceivedArgs Event, string[] args)
+        {
+            Response = Response.Replace("{Username}", Event.ChatMessage.Username)
+            .Replace("{Channel}", Event.ChatMessage.Channel)
+            .Replace("{Message}", Event.ChatMessage.Message)
+            .Replace("{Uptime}", await GetUptime(client.JoinedChannels[0].Channel));
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                Response = Response.Replace($"{{Args[{i + 1}]}}", args[i]);
+            }
+
+            var UptimeRegex = new Regex(@"{Uptime(\.([A-Za-z0-9_]+))?}");
+
+            var matches = UptimeRegex.Matches(Response);
+
+            foreach (Match match in matches)
+            {
+                string[] split = match.Value.Split('.');
+                string ChannelName = split.Length == 1 ? client.JoinedChannels[0].Channel : split[1].Replace("}", "");
+                Response = Response.Replace(match.Value, await GetUptime(ChannelName));
+            }
+
+            return Response;
+        }
+
+        private static YAMLSettings InitialiseSettings()
+        {
+            if (!Directory.Exists(Path.Combine(SettingsPath, "Bhotianaa")))
+                Directory.CreateDirectory(Path.Combine(SettingsPath, "Bhotianaa"));
+
+            if (!File.Exists(Path.Combine(SettingsPath, "Bhotianaa", "Settings.yaml")))
+                File.Create(Path.Combine(SettingsPath, "Bhotianaa", "Settings.yaml")).Close();
+
+            string config = File.ReadAllText(Path.Combine(SettingsPath, "Bhotianaa", "Settings.yaml"));
+            return YAMLDeserializer.Deserialize<YAMLSettings>(config);
         }
 
         private static string WebHookMsg(string Description, string GameName)
