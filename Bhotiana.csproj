@@ -60,6 +60,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Structure.cs" />
+    <Compile Include="Twitch.cs" />
     <EmbeddedResource Include="App.resx">
       <DependentUpon>App.cs</DependentUpon>
     </EmbeddedResource>
@@ -100,4 +101,9 @@
     <Content Include="Hi.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>if $(ConfigurationName) == Release (
+    powershell Compress-Archive -Path '$(TargetDir)*.dll', '$(TargetDir)*.pdb', '$(TargetDir)*.config' -DestinationPath '$(SolutionDir)bin\Bhotianaa_.zip' -Force
+)</PostBuildEvent>
+  </PropertyGroup>
 </Project>
