@@ -1,66 +1,53 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Windows.Forms;
 using System.Net.Http;
-using System.Threading.Tasks;
 using System.Speech.Synthesis;
-using TwitchLib.Client.Events;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using TwitchLib.Client.Models;
-using TwitchLib.Client;
-using TwitchLib.Communication.Models;
-using TwitchLib.Communication.Clients;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using NCalc;
 
 namespace Bhotiana
 {
     public partial class App : Form
     {
-        public TwitchClient client;
-        public bool ShouldActivateCommands = true;
-        public bool ShouldGreetNewViewers = true;
         public YAMLSettings BotSetting;
-        public SpeechSynthesizer TextToSpeech;
 
-        private static string SettingsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        private static ConnectionCredentials credentials;
+        private readonly Twitch Twitch;
+
+        private static string ChannelName;
+        private static readonly string SettingsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         private static readonly IDeserializer YAMLDeserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).Build();
-        private static readonly HttpClient httpClient = new HttpClient();
 
-        public App()
+        public App(SpeechSynthesizer TTS, HttpClient HttpClient)
         {
             InitializeComponent();
             BotSetting = InitialiseSettings();
-            ConsoleView.Text = "";
 
-            TextToSpeech = new SpeechSynthesizer();
-            TextToSpeech.SetOutputToDefaultAudioDevice();
-
-            if (TextToSpeech.GetInstalledVoices().Any(voice => voice.VoiceInfo.Name == "Microsoft Zira Desktop"))
-                TextToSpeech.SelectVoice("Microsoft Zira Desktop");
-
-            TextToSpeech.Speak("I'm now online mamma");
-
-            credentials = new ConnectionCredentials(Properties.Settings.Default.Username, Properties.Settings.Default.Password);
-            var clientOptions = new ClientOptions
+            Twitch = new Twitch(new ConnectionCredentials(Properties.Settings.Default.Username, Properties.Settings.Default.Password))
             {
-                MessagesAllowedInPeriod = 750,
-                ThrottlingPeriod = TimeSpan.FromSeconds(30)
+                Config = BotSetting,
+                HttpClient = HttpClient,
+                TextToSpeech = TTS
             };
 
-            WebSocketClient customClient = new WebSocketClient(clientOptions);
-            client = new TwitchClient(customClient);
+            Twitch.ConsoleUpdateRequested += UpdateConsoleView;
+            ConsoleView.Text = "";
+
+            Twitch.TextToSpeech.SetOutputToDefaultAudioDevice();
+
+            if (Twitch.TextToSpeech.GetInstalledVoices().Any(voice => voice.VoiceInfo.Name == "Microsoft Zira Desktop"))
+                Twitch.TextToSpeech.SelectVoice("Microsoft Zira Desktop");
+
+            Twitch.TextToSpeech.Speak("I'm now online mamma");
         }
 
         private async void StartBotBtn_Click(object sender, EventArgs e)
         {
-            string ChannelName = ChannelNameTextBox.Text.ToLower();
+            ChannelName = ChannelNameTextBox.Text.ToLower();
             if (ChannelName == "")
             {
                 MessageBox.Show("Please enter a channel name", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -69,34 +56,31 @@ namespace Bhotiana
 
             if (StartBotBtn.Text == "Disconnect")
             {
-                client.Disconnect();
+                Twitch.Disconnect();
                 StartBotBtn.Text = "Connect";
-                UpdateConsoleView($"Disconnected from {ChannelName}\n");
-                TextToSpeech.Speak("Disconnected");
+                UpdateConsoleView($"Disconnected from {ChannelName}");
+                Twitch.TextToSpeech.Speak("Disconnected");
             }
 
             else
             {
                 if (ChannelName != "gianaa_")
                 {
-                    HttpResponseMessage TwitchInsights = await httpClient.GetAsync($"https://api.twitchinsights.net/v1/user/status/{ChannelName}");
-                    string TwitchInsightsResponse = await TwitchInsights.Content.ReadAsStringAsync();
-                    if (TwitchInsightsResponse.Contains("{\"status\":400"))
+                    if (await Twitch.IsValidChannelAsync(ChannelName))
                     {
                         MessageBox.Show("Channel not found. Please enter a valid channel!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
-                }                
+                }
 
-                client.Initialize(credentials, ChannelName);
-                client.OnMessageReceived += OnMessageReceived;
-                client.Connect();
+                Twitch.Connect(ChannelName);
+
                 StartBotBtn.Text = "Disconnect";
-                UpdateConsoleView($"Connected to {ChannelName}\n");
+                UpdateConsoleView($"Connected to {ChannelName}");
                 if (ChannelName != "gianaa_")
-                    TextToSpeech.Speak($"Connected to {ChannelName}");
+                    Twitch.TextToSpeech.Speak($"Connected to {ChannelName}");
                 else
-                    TextToSpeech.Speak("Connected to your twitch channel mamma");
+                    Twitch.TextToSpeech.Speak("Connected to your twitch channel mamma");
             }
         }
 
@@ -107,7 +91,7 @@ namespace Bhotiana
                 try
                 {
                     if (ChatBox.Text == "") return;
-                    client.SendMessage(client.JoinedChannels[0], ChatBox.Text);
+                    Twitch.SendMessage(ChannelName, ChatBox.Text);
                     ChatBox.Text = "";
                     e.Handled = true;
                     e.SuppressKeyPress = true;
@@ -119,188 +103,25 @@ namespace Bhotiana
             }
         }
 
-        private void GoLiveBtn_Click(object sender, EventArgs e)
+        private async void GoLiveBtn_Click(object sender, EventArgs e)
         {
             if (StreamTitleTextBox.Text == "" || GameNameTextBox.Text == "")
             {
                 MessageBox.Show("Please enter a Stream Title and Game Name", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            _ = PostRequest(
+
+            await PostRequest(
                     Properties.Settings.Default.WebHookURL,
                     WebHookMsg(StreamTitleTextBox.Text, GameNameTextBox.Text)
-                );
-        }
-
-        private void OnMessageReceived(object sender, OnMessageReceivedArgs e)
-        {
-            if (ShouldGreetNewViewers && !BotSetting.ViewersToIgnore.Contains(e.ChatMessage.UserId))
-            {
-                BotSetting.ViewersToIgnore = BotSetting.ViewersToIgnore.Append(e.ChatMessage.UserId).ToArray();
-                if (e.ChatMessage.UserId.Equals("518259240"))
-                    SendMessage("Hello mamma gianaaHi , how are you doing? Did you sent the discord notification yet?");
-                else if (e.ChatMessage.UserId.Equals("709767328"))
-                    SendMessage("gianaaHi d3fau4t, লাইভ স্ট্রীমে স্বাগতম VoHiYo");
-                else
-                    SendMessage($"gianaaHi Welcome to my mamma's stream, {e.ChatMessage.Username}");
-                UpdateConsoleView($"{e.ChatMessage.Username} joined the stream\n");
-            }
-
-            if (!ShouldActivateCommands) return;
-
-            if (e.ChatMessage.Message.EndsWith("-")) SendMessage(e.ChatMessage.Message.TrimEnd('-'));
-            if (!e.ChatMessage.Message.StartsWith(BotSetting.Prefix)) return;
-            string[] args = e.ChatMessage.Message.Split(' ');
-            HandleCommands(args[0].ToLower(), args.Skip(1).ToArray(), e);
+            );
         }
 
         private async Task<string> PostRequest(string Link, string Content)
         {
             var content = new StringContent(Content, Encoding.UTF8, "application/json");
-            var response = await httpClient.PostAsync(Link, content);
+            var response = await Twitch.HttpClient.PostAsync(Link, content);
             return await response.Content.ReadAsStringAsync();
-        }
-
-        public async Task<string> DefineWord(string word)
-        {
-            word = word.ToLower();
-            HttpResponseMessage FreeDictionaryAPI = await httpClient.GetAsync($"https://api.dictionaryapi.dev/api/v2/entries/en/{word}");
-            if (!FreeDictionaryAPI.IsSuccessStatusCode)
-            {
-                HttpResponseMessage UrbanDictionaryAPI = await httpClient.GetAsync($"https://api.urbandictionary.com/v0/define?term={word}");
-                if (!UrbanDictionaryAPI.IsSuccessStatusCode) return "no def found";
-                string UDResBody = await UrbanDictionaryAPI.Content.ReadAsStringAsync();
-                JObject UDResult = JsonConvert.DeserializeObject<JObject>(UDResBody);
-                JArray UDList = UDResult["list"] as JArray;
-                if (UDList.Count == 0) return "no def found";
-                string UDFinalRes = $"[Urban Dictionary] {UDList[0]["word"]}: " + UDList[0]["definition"].ToString();
-                if (UDFinalRes.Length > 500) return $"[Urban Dictionary] Definition exceeds twitch message character limit. Open the link instead: https://www.urbandictionary.com/define.php?term={word}";
-                return UDFinalRes;
-            }
-
-            string FDResBody = await FreeDictionaryAPI.Content.ReadAsStringAsync();
-            var FDResult = JsonConvert.DeserializeObject<JArray>(FDResBody);
-            string FDFinalRes = $"[Free Dictionary] {FDResult[0]["word"]}: " + FDResult[0]["meanings"][0]["definitions"][0]["definition"].ToString();
-            if (FDFinalRes.Length > 500) return $"[Free Dictionary] Definition exceeds twitch message character limit. Open the link instead: https://api.dictionaryapi.dev/api/v2/entries/en/{word}";
-            return FDFinalRes;
-        }
-
-        public async Task<string> GetUptime(string ChannelName)
-        {
-            HttpResponseMessage res = await httpClient.GetAsync($"https://decapi.me/twitch/uptime?channel={ChannelName.ToLower()}");
-            if (!res.IsSuccessStatusCode) return "An unknown error occurred";
-            return await res.Content.ReadAsStringAsync();
-        }
-
-        private void SendMessage(string message, string ReplyID = null)
-        {
-            if (ReplyID != null) client.SendReply(client.JoinedChannels[0], ReplyID, message);
-            else client.SendMessage(client.JoinedChannels[0], message);
-        }
-
-        private async void HandleCommands(string CommandName, string[] args, OnMessageReceivedArgs RawEvent)
-        {
-            foreach (Command cmd in BotSetting.Commands)
-            {
-                if (CommandName.Replace(BotSetting.Prefix, "") == cmd.Name.ToLower())
-                {
-                    if (cmd.Condition != null)
-                    {
-                        bool ConditionMet = EvaluateCondition(cmd.Condition, args);
-                        string response = await ResponseEvaluator(ConditionMet ? cmd.ResponseConditional : cmd.Response, RawEvent, args);
-
-                        bool IsReply = ConditionMet ? cmd.IsConditionalReply : cmd.IsReply;
-
-                        if (IsReply) SendMessage(response, RawEvent.ChatMessage.Id);
-                        else SendMessage(response);
-                    }
-                }
-            }
-
-            if (CommandName == $"{BotSetting.Prefix}define")
-            {
-                string res = await DefineWord(args[0]);
-                if (res == "no def found") SendMessage("Mamma, help. I don't know the meaning of this word D:");
-                else SendMessage(res, RawEvent.ChatMessage.Id);
-            }
-
-            else if (CommandName == $"{BotSetting.Prefix}tts")
-            {
-                string message = string.Join(" ", args);
-                TextToSpeech.SpeakAsync(message);
-            }
-
-            else if (CommandName == $"{BotSetting.Prefix}voices")
-            {
-                string voices = "";
-                UpdateConsoleView("\nAvailable voices are:\n");
-                foreach (InstalledVoice voice in TextToSpeech.GetInstalledVoices())
-                {
-                    UpdateConsoleView(voice.VoiceInfo.Name + "\n");
-                    voices += voice.VoiceInfo.Name + ", ";
-                }
-
-                SendMessage($"Available voices are: {voices.TrimEnd(' ', ',')}");
-            }
-
-            else if (CommandName == $"{BotSetting.Prefix}voice")
-            {
-                try
-                {
-                    TextToSpeech.SelectVoice(string.Join(" ", args));
-                    TextToSpeech.SpeakAsync($"Voice changed to {TextToSpeech.Voice.Name} successfully");
-                    SendMessage($"Voice changed to {TextToSpeech.Voice.Name} successfully");
-                }
-                catch (ArgumentException ex)
-                {
-                    UpdateConsoleView(ex.Message + "\n");
-                    TextToSpeech.SpeakAsync(ex.Message);
-                    SendMessage(ex.Message, RawEvent.ChatMessage.Id);
-                }
-            }
-        }
-
-        private bool EvaluateCondition(string Condition, string[] args)
-        {
-            if (string.IsNullOrEmpty(Condition)) return true;
-            var Expression = new Expression(Condition);
-            Expression.Parameters["Args"] = args;
-            Expression.EvaluateFunction += delegate (string name, FunctionArgs functionArgs)
-            {
-                if (name == "Length")
-                {
-                    var array = functionArgs.Parameters[0].Evaluate() as string[];
-                    functionArgs.Result = array.Length;
-                }
-            };
-
-            return (bool)Expression.Evaluate();
-        }
-
-        private async Task<string> ResponseEvaluator(string Response, OnMessageReceivedArgs Event, string[] args)
-        {
-            Response = Response.Replace("{Username}", Event.ChatMessage.Username)
-            .Replace("{Channel}", Event.ChatMessage.Channel)
-            .Replace("{Message}", Event.ChatMessage.Message)
-            .Replace("{Uptime}", await GetUptime(client.JoinedChannels[0].Channel));
-
-            for (int i = 0; i < args.Length; i++)
-            {
-                Response = Response.Replace($"{{Args[{i + 1}]}}", args[i]);
-            }
-
-            var UptimeRegex = new Regex(@"{Uptime(\.([A-Za-z0-9_]+))?}");
-
-            var matches = UptimeRegex.Matches(Response);
-
-            foreach (Match match in matches)
-            {
-                string[] split = match.Value.Split('.');
-                string ChannelName = split.Length == 1 ? client.JoinedChannels[0].Channel : split[1].Replace("}", "");
-                Response = Response.Replace(match.Value, await GetUptime(ChannelName));
-            }
-
-            return Response;
         }
 
         private static YAMLSettings InitialiseSettings()
@@ -317,20 +138,20 @@ namespace Bhotiana
 
         private void ActivateCommandsCheckbox_CheckedChanged(object sender, EventArgs e)
         {
-            ShouldActivateCommands = ActivateCommandsCheckbox.Checked;
+            BotSetting.ShouldActivateCommands = ActivateCommandsCheckbox.Checked;
         }
 
         private void GreetCheckbox_CheckedChanged(object sender, EventArgs e)
         {
-            ShouldGreetNewViewers = GreetCheckbox.Checked;
+            BotSetting.ShouldGreetViewers = GreetCheckbox.Checked;
         }
 
-        private void UpdateConsoleView(string text)
+        public void UpdateConsoleView(string text)
         {
             if (ConsoleView.InvokeRequired)
-                ConsoleView.Invoke(new Action<string>(UpdateConsoleView), text);
+                ConsoleView.Invoke(new Action<string>(UpdateConsoleView), text + "\n");
             else
-                ConsoleView.Text += text;
+                ConsoleView.Text += text + "\n";
         }
 
         private static string WebHookMsg(string Description, string GameName)

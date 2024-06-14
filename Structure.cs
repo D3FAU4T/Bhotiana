@@ -3,8 +3,12 @@
     public class YAMLSettings
     {
         public string Prefix { get; set; }
+        public string Repeater { get; set; }
         public string[] ViewersToIgnore { get; set; }
         public Command[] Commands { get; set; }
+        public bool ShouldGreetViewers { get; set; }
+        public bool ShouldActivateCommands { get; set; }
+
     }
 
     public class Command

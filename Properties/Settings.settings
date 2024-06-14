@@ -2,16 +2,16 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Bhotiana.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="Username" Type="System.String" Scope="User">
+    <Setting Name="Username" Type="System.String" Scope="Application">
       <Value Profile="(Default)">bhotianaa_</Value>
     </Setting>
-    <Setting Name="Password" Type="System.String" Scope="User">
+    <Setting Name="Password" Type="System.String" Scope="Application">
       <Value Profile="(Default)">64ex576fxj2si4bxy239j3yq4jrj27</Value>
     </Setting>
-    <Setting Name="ClientID" Type="System.String" Scope="User">
+    <Setting Name="ClientID" Type="System.String" Scope="Application">
       <Value Profile="(Default)">l8h8cvom7ne5gqoraf5kbggre15oc6</Value>
     </Setting>
-    <Setting Name="WebHookURL" Type="System.String" Scope="User">
+    <Setting Name="WebHookURL" Type="System.String" Scope="Application">
       <Value Profile="(Default)">https://discord.com/api/webhooks/1223255129902415983/3CiU5O4JgqQ3vV0PJ8UUMOgDiu-QWd17g1Wk7AzP_-HCLU49xs1-bg3iDF1xWmCD3ns1</Value>
     </Setting>
   </Settings>
